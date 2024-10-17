@@ -1,10 +1,10 @@
 use std::fmt::format;
-use std::fs::{create_dir_all, read_dir, File, OpenOptions};
+use std::fs::{create_dir_all, read_dir, remove_file, File, OpenOptions};
 use std::io;
 use std::io::{Read, Write};
 use std::path::Path;
 use regex::Regex;
-use crate::Status::NotStarted;
+use crate::Status::{Done, NotStarted, Working};
 use std::fs;
 
 #[derive(Debug)]
@@ -21,7 +21,7 @@ impl Task {
             title: parts[0].trim().parse().unwrap(),
             due_date: parts[1].trim().parse().unwrap(),
             priority: parts[2].trim().parse().unwrap(),
-            status: NotStarted,
+            status: Status::get_status_from_string(parts[3].trim()),
         };
         new_task
     }
@@ -34,6 +34,25 @@ enum Status {
     Done,
 }
 
+impl Status {
+    fn get_string_from_status(status: Status) -> String {
+        match status {
+            NotStarted => {String::from("NotStarted")}
+            Working => {String::from("Working")}
+            Done => {String::from("Done")}
+        }
+    }
+
+    fn get_status_from_string(string: &str) -> Status {
+        match string {
+            "NotStarted" => NotStarted,
+            "Working" => Working,
+            "Done" => Done,
+            _ => NotStarted,
+        }
+    }
+}
+
 fn main() {
     println!("Welcome to the best ToDo Application EUW");
     create_dir_all("./db").expect("Hallo");
@@ -43,14 +62,12 @@ fn main() {
         let mut command = String::new();
         io::stdin().read_line(&mut command).expect("Failed to read line");
         match command.as_str().trim() {
-            "create" => {
-                create_task();
-            }
+            "create" => create_task(),
             "view" => display_tasks(),
             "search" => search_tasks(&mut db_file),
-            "delete" => delete_tasks(&mut db_file),
+            "delete" => delete_tasks(),
             "dbg" => dbg(&mut db_file),
-            "status" => change_status(&mut db_file),
+            "status" => change_status(),
             "exit" => break,
             _ => println!("{}", command.as_str()),
         }
@@ -89,7 +106,7 @@ fn create_task() {
 }
 
 fn save_task_in_new_file(task: &Task) -> bool {
-        let result_string = format!("{} | {} | {} | {:?}\n", task.title.trim(), task.due_date.trim(), task.priority, task.status);
+        let result_string = construct_result_string(task);
         let file_title = format!("{}", task.title.trim());
         let mut file: Option<File> = None;
         if !Path::exists(Path::new(&file_title)) {
@@ -152,66 +169,74 @@ fn search_tasks(file: &mut File) {
     }
 }
 
-fn delete_tasks(file: &mut File) {
-    let cont = get_file_contents(file);
-    let tasks: Vec<&str> = cont.split('\n').collect();
-    let mut filtered_tasks: Vec<&str> = tasks.clone();
-    println!("Enter Title of Task to be deleted");
-    let mut term = String::new();
-    io::stdin().read_line(&mut term).expect("Failed to read line");
-    for task in tasks.clone() {
-        let parts: Vec<&str> = task.split('|').collect();
-        if parts[0].replace('|', "").trim().to_lowercase().contains(&term.trim().to_lowercase()) {
-            filtered_tasks.retain(|&task| !task.replace('|', "").trim().to_lowercase().contains(&term.trim().to_lowercase()));
-            let write_string = construct_write_string(&filtered_tasks);
-            let mut file = OpenOptions::new().write(true).truncate(true).open("db.txt").expect("Failed to open file");
-            file.write_all(write_string.as_bytes()).unwrap();
+fn clear_file_contents(file_path: &str) {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(file_path)
+        .expect("Failed to open file");
+    file.write_all(b"").expect("Failed to clear file contents");
+}
+
+fn delete_tasks(){
+    loop {
+        println!("Enter Title of Task to be deleted");
+        let mut term = String::new();
+        io::stdin().read_line(&mut term).expect("Failed to read line");
+        let file_path_str = format!("./db/{}.txt", &term.trim());
+        let file_path = Path::new(&file_path_str);
+        if Path::exists(file_path) {
+            match remove_file(file_path) {
+                Ok(_) => break,
+                Err(_) => println!("File / Task not found enter a valid Title."),
+            };
         }
     }
 }
 
-fn change_status(file: &mut File) {
-    let cont = get_file_contents(file);
-    let tasks: Vec<&str> = cont.split('\n').collect();
-    let mut filtered_tasks: Vec<String> = tasks.iter().map(|&s| s.to_string()).collect();
+fn change_status() {
     println!("Enter Title of Task to be updated");
     let mut term = String::new();
     io::stdin().read_line(&mut term).expect("Failed to read line");
-    for task in tasks.clone() {
-        let parts: Vec<&str> = task.split('|').collect();
-        if parts[0].replace('|', "").trim().to_lowercase().contains(&term.trim().to_lowercase()) {
-            let mut updated_status = None;
-            loop {
-                println!("What Status do you want to give it?");
-                let mut stat = String::new();
-                io::stdin().read_line(&mut stat).expect("Failed to read line");
-                updated_status = match stat.trim().to_lowercase().as_str() {
-                    "not started" => Some(Status::NotStarted),
-                    "working" => Some(Status::Working),
-                    "done" => Some(Status::Done),
-                    _ => None
-                };
-                match updated_status {
-                    None => { println!("Enter a valid option ty.") }
-                    Some(_) => { break }
+    let file_path_str = format!("./db/{}.txt", &term.trim());
+    let file_path = Path::new(&file_path_str);
+    if Path::exists(file_path) {
+        let mut file = OpenOptions::new().read(true).open(&file_path_str).expect("Error while opening file");
+        let mut cont = get_file_contents(&mut file);
+        let mut parts: Vec<&str> = cont.split("|").collect();
+
+        loop {
+            let mut status = String::new();
+            println!("What status do you want to give 1: not started, 2: working, 3: done");
+            io::stdin().read_line(&mut status).expect("Error reading line");
+            let new_status: Option<Status> = match status.trim() {
+                "1" => Some(NotStarted),
+                "2" => Some(Working),
+                "3" => Some(Done),
+                _ => None,
+            };
+            match new_status {
+                None => {
+                    println!("Please enter a valid option 1, 2, 3");
+                }
+                Some(new_status) => {
+                    let status_string = Status::get_string_from_status(new_status);
+                    parts[3] = Box::leak(status_string.into_boxed_str());
+                    let updated_task = Task::construct_from_parts(&parts);
+                    let result_string = construct_result_string(&updated_task);
+
+                    // Truncate the file and write the updated contents
+                    let mut file = OpenOptions::new().write(true).truncate(true).open(&file_path_str).expect("Error while opening file");
+                    file.write_all(result_string.as_bytes()).expect("Error writing");
+                    break;
                 }
             }
-            filtered_tasks.retain(|task| !task.replace('|', "").trim().to_lowercase().contains(&term.trim().to_lowercase()));
-            for task in &filtered_tasks {
-                println!("{task}");
-            }
-            let part_task = Task::construct_from_parts(&parts);
-            let updated_task = Task {
-                status: updated_status.unwrap(),
-                ..part_task
-            };
-            let formatted_task = format!("{} | {} | {} | {:?}", updated_task.title, updated_task.due_date, updated_task.priority, updated_task.status);
-            filtered_tasks.push(formatted_task);
         }
     }
-    let write_string = construct_write_string(&filtered_tasks.iter().map(|s| s.as_str()).collect());
-    let mut file = OpenOptions::new().write(true).truncate(true).open("db.txt").expect("Failed to open file");
-    file.write_all(write_string.as_bytes()).unwrap();
+}
+
+fn construct_result_string(task: &Task) -> String {
+    format!("{} | {} | {} | {:?}\n", task.title.trim(), task.due_date.trim(), task.priority, task.status)
 }
 
 fn construct_write_string(tasks: &Vec<&str>) -> String {
