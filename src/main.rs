@@ -1,9 +1,11 @@
-use std::fs::{File, OpenOptions};
+use std::fmt::format;
+use std::fs::{create_dir_all, read_dir, File, OpenOptions};
 use std::io;
 use std::io::{Read, Write};
 use std::path::Path;
 use regex::Regex;
 use crate::Status::NotStarted;
+use std::fs;
 
 #[derive(Debug)]
 struct Task {
@@ -19,7 +21,7 @@ impl Task {
             title: parts[0].trim().parse().unwrap(),
             due_date: parts[1].trim().parse().unwrap(),
             priority: parts[2].trim().parse().unwrap(),
-            status: Status::NotStarted,
+            status: NotStarted,
         };
         new_task
     }
@@ -33,35 +35,30 @@ enum Status {
 }
 
 fn main() {
-    let exit = false;
     println!("Welcome to the best ToDo Application EUW");
-    if !Path::new("db.txt").exists() {
-        File::create("db.txt").expect("Failed to create file maybe check permissions.");
-    }
-    while !exit {
+    create_dir_all("./db").expect("Hallo");
+    loop {
         let mut db_file = OpenOptions::new().read(true).write(true).append(true).open("db.txt").expect("Failed to open file permissions");
         println!("What do?");
         let mut command = String::new();
         io::stdin().read_line(&mut command).expect("Failed to read line");
         match command.as_str().trim() {
             "create" => {
-                let taggus = create_task();
-                save_task_to_file(&mut db_file, taggus);
+                create_task();
             }
-            "view" => display_tasks(&mut db_file),
+            "view" => display_tasks(),
             "search" => search_tasks(&mut db_file),
             "delete" => delete_tasks(&mut db_file),
             "dbg" => dbg(&mut db_file),
             "status" => change_status(&mut db_file),
+            "exit" => break,
             _ => println!("{}", command.as_str()),
         }
     }
 }
 
-fn create_task() -> Task {
+fn create_task() {
     let mut new_task = Task { title: String::new(), due_date: String::new(), priority: 0, status: Status::NotStarted };
-    println!("What is the Title of the task?");
-    io::stdin().read_line(&mut new_task.title).expect("Failed to read line");
     let reggie_from_nintendo = Regex::new(r"\d{4}-\d{2}-\d{2}");
     let mut temp_date = String::new();
     loop {
@@ -82,12 +79,40 @@ fn create_task() -> Task {
         Ok(num) => new_task.priority = num,
         Err(..) => println!("Enter a valid i32 Number please :3"),
     }
-    new_task
+    loop {
+        println!("What is the Title of the task?");
+        io::stdin().read_line(&mut new_task.title).expect("Failed to read line");
+        if save_task_in_new_file(&new_task) {
+            break;
+        }
+    }
 }
 
-fn save_task_to_file(file: &mut File, task: Task) {
-    let result_string = format!("{} | {} | {} | {:?}\n", task.title.trim(), task.due_date.trim(), task.priority, task.status);
-    file.write_all(&result_string.as_bytes()).expect("Okie Dokie");
+fn save_task_in_new_file(task: &Task) -> bool {
+        let result_string = format!("{} | {} | {} | {:?}\n", task.title.trim(), task.due_date.trim(), task.priority, task.status);
+        let file_title = format!("{}", task.title.trim());
+        let mut file: Option<File> = None;
+        if !Path::exists(Path::new(&file_title)) {
+            file = match File::create(format!("./db/{file_title}.txt")) {
+                Ok(mut file) => {
+                    file.write_all(&result_string.into_bytes()).expect("Failed to write");
+                    Some(file)
+                }
+                Err(err) => {
+                    println!("Failed to create File {err}");
+                    None
+                }
+            };
+        }
+        match file {
+            None => {
+                println!("Task with that title already exists (must be unique)");
+                false
+            }
+            Some(_) => {
+                true
+            }
+        }
 }
 
 fn get_file_contents(file: &mut File)-> String {
@@ -96,11 +121,12 @@ fn get_file_contents(file: &mut File)-> String {
     file_contents
 }
 
-fn display_tasks(file: &mut File) {
-    println!("Taks:");
-    let cont = get_file_contents(file);
-    let tasks: Vec<&str> = cont.split("\n").collect();
-    for task in tasks {
+fn display_tasks() {
+    println!("Tasks:");
+    let paths = read_dir("./db").unwrap();
+    for path in paths {
+        let mut task_file = File::open(path.unwrap().path()).unwrap();
+        let task = get_file_contents(&mut task_file);
         println!("{task}");
     }
 }
