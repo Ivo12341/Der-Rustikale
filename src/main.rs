@@ -1,11 +1,9 @@
-use std::fmt::format;
 use std::fs::{create_dir_all, read_dir, remove_file, File, OpenOptions};
 use std::io;
 use std::io::{Read, Write};
 use std::path::Path;
 use regex::Regex;
 use crate::Status::{Done, NotStarted, Working};
-use std::fs;
 
 #[derive(Debug)]
 struct Task {
@@ -57,16 +55,14 @@ fn main() {
     println!("Welcome to the best ToDo Application EUW");
     create_dir_all("./db").expect("Hallo");
     loop {
-        let mut db_file = OpenOptions::new().read(true).write(true).append(true).open("db.txt").expect("Failed to open file permissions");
         println!("What do?");
         let mut command = String::new();
         io::stdin().read_line(&mut command).expect("Failed to read line");
         match command.as_str().trim() {
             "create" => create_task(),
             "view" => display_tasks(),
-            "search" => search_tasks(&mut db_file),
+            "search" => search_tasks(),
             "delete" => delete_tasks(),
-            "dbg" => dbg(&mut db_file),
             "status" => change_status(),
             "exit" => break,
             _ => println!("{}", command.as_str()),
@@ -148,9 +144,7 @@ fn display_tasks() {
     }
 }
 
-fn search_tasks(file: &mut File) {
-    let cont = get_file_contents(file);
-    let tasks: Vec<&str> = cont.split("\n").collect();
+fn search_tasks() {
     println!("If you wish to exit type q");
     loop {
         println!("Enter search Term");
@@ -161,21 +155,21 @@ fn search_tasks(file: &mut File) {
         }
         let leggie_from_lintendo = Regex::new(&format!(".*{}.*", regex::escape(&term.trim()))).unwrap();
         println!("Tasks, that contain the term:");
-        for task in tasks.clone() {
-            if leggie_from_lintendo.is_match(task) {
+        let paths = read_dir("./db").unwrap();
+        let mut found = false;
+        for path in paths {
+            let path = path.unwrap().path();
+            let mut task_file = File::open(&path).unwrap();
+            let task = get_file_contents(&mut task_file);
+            if leggie_from_lintendo.is_match(&task) {
                 println!("{task}");
+                found = true;
             }
         }
+        if !found {
+            println!("No tasks found containing the term.");
+        }
     }
-}
-
-fn clear_file_contents(file_path: &str) {
-    let mut file = OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .open(file_path)
-        .expect("Failed to open file");
-    file.write_all(b"").expect("Failed to clear file contents");
 }
 
 fn delete_tasks(){
@@ -202,7 +196,7 @@ fn change_status() {
     let file_path = Path::new(&file_path_str);
     if Path::exists(file_path) {
         let mut file = OpenOptions::new().read(true).open(&file_path_str).expect("Error while opening file");
-        let mut cont = get_file_contents(&mut file);
+        let cont = get_file_contents(&mut file);
         let mut parts: Vec<&str> = cont.split("|").collect();
 
         loop {
@@ -224,8 +218,6 @@ fn change_status() {
                     parts[3] = Box::leak(status_string.into_boxed_str());
                     let updated_task = Task::construct_from_parts(&parts);
                     let result_string = construct_result_string(&updated_task);
-
-                    // Truncate the file and write the updated contents
                     let mut file = OpenOptions::new().write(true).truncate(true).open(&file_path_str).expect("Error while opening file");
                     file.write_all(result_string.as_bytes()).expect("Error writing");
                     break;
@@ -237,28 +229,4 @@ fn change_status() {
 
 fn construct_result_string(task: &Task) -> String {
     format!("{} | {} | {} | {:?}\n", task.title.trim(), task.due_date.trim(), task.priority, task.status)
-}
-
-fn construct_write_string(tasks: &Vec<&str>) -> String {
-    let mut write_string = String::new();
-    for task in tasks.iter().filter(|&&task| !task.trim().is_empty()) {
-        write_string.push_str(task.trim());
-        write_string.push_str("\n");
-    }
-    write_string
-}
-
-fn dbg(file: &mut File) {
-    let cont = get_file_contents(file);
-    let tasks: Vec<&str> = cont.split('\n').collect();
-    let mut filtered_tasks: Vec<&str> = tasks.clone();
-    //println!("Enter Title of Task to be updated");
-    let mut term = String::new();
-    //io::stdin().read_line(&mut term).expect("Failed to read line");
-    for task in tasks.clone() {
-        let parts: Vec<&str> = task.split('|').collect();
-        for part in parts {
-            println!("{part}");
-        }
-    }
 }
