@@ -3,7 +3,6 @@ mod txt;
 mod task;
 
 use std::io;
-use crate::Status::{Done, NotStarted, Working};
 
 const ERR_GENERAL: &str = "Error occurred";
 const ERR_INPUT: &str = "Failed to read line";
