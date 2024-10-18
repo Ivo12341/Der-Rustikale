@@ -5,6 +5,11 @@ use std::path::Path;
 use regex::Regex;
 use crate::Status::{Done, NotStarted, Working};
 
+const ERR_GENERAL: &str = "Error occurred";
+const ERR_INPUT: &str = "Failed to read line";
+const ERR_OUTPUT: &str = "Failed to write";
+const ERR_VALID_TASK: &str = "Enter a valid task";
+const ERR_VALID_OPTION: &str = "Enter a valid option";
 #[derive(Debug)]
 struct Task {
     title: String,
@@ -57,7 +62,7 @@ fn main() {
     loop {
         println!("What do?");
         let mut command = String::new();
-        io::stdin().read_line(&mut command).expect("Failed to read line");
+        io::stdin().read_line(&mut command).expect(ERR_INPUT);
         match command.as_str().trim() {
             "create" => create_task(),
             "view" => display_tasks(),
@@ -71,12 +76,12 @@ fn main() {
 }
 
 fn create_task() {
-    let mut new_task = Task { title: String::new(), due_date: String::new(), priority: 0, status: Status::NotStarted };
+    let mut new_task = Task { title: String::new(), due_date: String::new(), priority: 0, status: NotStarted };
     let reggie_from_nintendo = Regex::new(r"\d{4}-\d{2}-\d{2}");
     let mut temp_date = String::new();
     loop {
         println!("When is the Task due (yyyy-mm-dd)");
-        io::stdin().read_line(&mut temp_date).expect("Failed to read line");
+        io::stdin().read_line(&mut temp_date).expect(ERR_INPUT);
         if !reggie_from_nintendo.clone().unwrap().is_match(&temp_date) {
             println!("Wrong Format (use yyyy-mm-dd)");
         }
@@ -87,14 +92,14 @@ fn create_task() {
     }
     println!("What Priority does it have? (i32 Number)");
     let mut temp_prio = String::new();
-    io::stdin().read_line(&mut temp_prio).expect("Failed to read line");
+    io::stdin().read_line(&mut temp_prio).expect(ERR_INPUT);
     match temp_prio.trim().parse() {
         Ok(num) => new_task.priority = num,
         Err(..) => println!("Enter a valid i32 Number please :3"),
     }
     loop {
         println!("What is the Title of the task?");
-        io::stdin().read_line(&mut new_task.title).expect("Failed to read line");
+        io::stdin().read_line(&mut new_task.title).expect(ERR_INPUT);
         if save_task_in_new_file(&new_task) {
             break;
         }
@@ -108,11 +113,11 @@ fn save_task_in_new_file(task: &Task) -> bool {
         if !Path::exists(Path::new(&file_title)) {
             file = match File::create(format!("./db/{file_title}.txt")) {
                 Ok(mut file) => {
-                    file.write_all(&result_string.into_bytes()).expect("Failed to write");
+                    file.write_all(&result_string.into_bytes()).expect(ERR_OUTPUT);
                     Some(file)
                 }
                 Err(err) => {
-                    println!("Failed to create File {err}");
+                    println!("{ERR_OUTPUT} {err}");
                     None
                 }
             };
@@ -130,7 +135,7 @@ fn save_task_in_new_file(task: &Task) -> bool {
 
 fn get_file_contents(file: &mut File)-> String {
     let mut file_contents = String::new();
-    file.read_to_string(&mut file_contents).expect("Error");
+    file.read_to_string(&mut file_contents).expect(ERR_GENERAL);
     file_contents
 }
 
@@ -149,7 +154,7 @@ fn search_tasks() {
     loop {
         println!("Enter search Term");
         let mut term = String::new();
-        io::stdin().read_line(&mut term).expect("Failed to read line");
+        io::stdin().read_line(&mut term).expect(ERR_INPUT);
         if term.trim() == String::from("q") {
             break;
         }
@@ -176,13 +181,13 @@ fn delete_tasks(){
     loop {
         println!("Enter Title of Task to be deleted");
         let mut term = String::new();
-        io::stdin().read_line(&mut term).expect("Failed to read line");
+        io::stdin().read_line(&mut term).expect(ERR_INPUT);
         let file_path_str = format!("./db/{}.txt", &term.trim());
         let file_path = Path::new(&file_path_str);
         if Path::exists(file_path) {
             match remove_file(file_path) {
                 Ok(_) => break,
-                Err(_) => println!("File / Task not found enter a valid Title."),
+                Err(_) => println!("{ERR_VALID_TASK}"),
             };
         }
     }
@@ -191,18 +196,18 @@ fn delete_tasks(){
 fn change_status() {
     println!("Enter Title of Task to be updated");
     let mut term = String::new();
-    io::stdin().read_line(&mut term).expect("Failed to read line");
+    io::stdin().read_line(&mut term).expect(ERR_INPUT);
     let file_path_str = format!("./db/{}.txt", &term.trim());
     let file_path = Path::new(&file_path_str);
     if Path::exists(file_path) {
-        let mut file = OpenOptions::new().read(true).open(&file_path_str).expect("Error while opening file");
+        let mut file = OpenOptions::new().read(true).open(&file_path_str).expect(ERR_GENERAL);
         let cont = get_file_contents(&mut file);
         let mut parts: Vec<&str> = cont.split("|").collect();
 
         loop {
             let mut status = String::new();
             println!("What status do you want to give 1: not started, 2: working, 3: done");
-            io::stdin().read_line(&mut status).expect("Error reading line");
+            io::stdin().read_line(&mut status).expect(ERR_INPUT);
             let new_status: Option<Status> = match status.trim() {
                 "1" => Some(NotStarted),
                 "2" => Some(Working),
@@ -211,7 +216,7 @@ fn change_status() {
             };
             match new_status {
                 None => {
-                    println!("Please enter a valid option 1, 2, 3");
+                    println!("{ERR_VALID_OPTION}");
                 }
                 Some(new_status) => {
                     let status_string = Status::get_string_from_status(new_status);
@@ -219,11 +224,14 @@ fn change_status() {
                     let updated_task = Task::construct_from_parts(&parts);
                     let result_string = construct_result_string(&updated_task);
                     let mut file = OpenOptions::new().write(true).truncate(true).open(&file_path_str).expect("Error while opening file");
-                    file.write_all(result_string.as_bytes()).expect("Error writing");
+                    file.write_all(result_string.as_bytes()).expect(ERR_OUTPUT);
                     break;
                 }
             }
         }
+    } else {
+        println!("{ERR_VALID_TASK}");
+        change_status();
     }
 }
 
