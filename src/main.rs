@@ -1,8 +1,13 @@
-mod db;
-mod txt;
+mod view;
 mod task;
+mod db_repo;
+mod txt_repo;
+mod repository;
 
 use std::io;
+use crate::db_repo::DbRepo;
+use crate::txt_repo::TxtRepo;
+use crate::view::View;
 
 const ERR_GENERAL: &str = "Error occurred";
 const ERR_INPUT: &str = "Failed to read line";
@@ -16,8 +21,16 @@ fn main() {
         let mut command = String::new();
         io::stdin().read_line(&mut command).expect(ERR_INPUT);
         match command.as_str().trim() {
-            "txt" => txt::start(),
-            "db" => db::start(),
+            "txt" => {
+                let txt_repo = TxtRepo::new("tasks.txt".to_string());
+                let view_txt = View::new(Box::new(txt_repo));
+                view_txt.start();
+            },
+            "db" => {
+                let db_repo = DbRepo::new("tasks.db");
+                let view_db = View::new(Box::new(db_repo));
+                view_db.start();
+            },
             "exit" => break,
             _ => println!("Coffee, Cheetos, Chicken"),
         }
