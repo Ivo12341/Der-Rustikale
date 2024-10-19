@@ -1,3 +1,5 @@
+use regex::Regex;
+
 #[derive(Debug)]
 pub struct Task {
     pub title: String,
@@ -16,6 +18,11 @@ impl Task {
         };
         new_task
     }
+
+    pub fn match_date_format(date: &str) -> bool {
+        let reggie_from_nintendo = Regex::new(r"\d{4}-\d{2}-\d{2}");
+        reggie_from_nintendo.clone().unwrap().is_match(date.trim())
+    }
 }
 
 #[derive(Debug)]
@@ -26,7 +33,7 @@ pub enum Status {
 }
 
 impl Status {
-    pub fn get_string_from_status(status: Status) -> String {
+    pub fn get_string_from_status(status: &Status) -> String {
         match status {
             Status::NotStarted => {String::from("NotStarted")}
             Status::Working => {String::from("Working")}
