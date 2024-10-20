@@ -37,7 +37,7 @@ create
 ```
 Create a new task.
 ```sh
-view
+View
 ```
 Display all tasks.
 ```sh
