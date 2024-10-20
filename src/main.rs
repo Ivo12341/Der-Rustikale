@@ -27,7 +27,7 @@ fn main() {
                 view_txt.start();
             },
             "db" => {
-                let db_repo = DbRepo::new("tasks.db");
+                let db_repo = DbRepo::new("todo.db");
                 let view_db = View::new(Box::new(db_repo));
                 view_db.start();
             },

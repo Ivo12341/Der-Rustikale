@@ -37,7 +37,7 @@ impl Repository for TxtRepo {
         let paths = read_dir("./db").unwrap();
         for path in paths {
             let mut task_file = File::open(path.unwrap().path()).unwrap();
-            task_vec.push(TxtRepo::get_file_contents(&mut task_file));
+            task_vec.push(TxtRepo::get_file_contents(&mut task_file).trim().parse().unwrap());
         }
         task_vec
     }
@@ -45,14 +45,13 @@ impl Repository for TxtRepo {
     fn search_tasks(&self, term: &str) -> String {
         let mut return_string = String::from("");
         let leggie_from_lintendo = Regex::new(&format!(".*{}.*", regex::escape(&term.trim()))).unwrap();
-        println!("Tasks, that contain the term:");
         let paths = read_dir("./db").unwrap();
         for path in paths {
             let path = path.unwrap().path();
             let mut task_file = File::open(&path).unwrap();
             let task = TxtRepo::get_file_contents(&mut task_file);
             if leggie_from_lintendo.is_match(&task) {
-                return_string.push_str(&format!("{task}\n"));
+                return_string.push_str(&format!("{task}"));
             }
         }
         return_string
@@ -72,13 +71,14 @@ impl Repository for TxtRepo {
     fn update_status(&self, term: &str, new_status: Status) -> bool {
         let file_path_str = format!("./db/{}.txt", &term.trim());
         if TxtRepo::check_path_exists(&file_path_str) {
-            let mut file = OpenOptions::new().read(true).open(&file_path_str).expect(ERR_GENERAL);
+            let mut file = OpenOptions::new().read(true).write(true).open(&file_path_str).expect(ERR_GENERAL);
             let cont = TxtRepo::get_file_contents(&mut file);
             let mut parts: Vec<&str> = cont.split("|").collect();
             let status_string = Status::get_string_from_status(&new_status);
             parts[3] = Box::leak(status_string.into_boxed_str());
             let updated_task = Task::construct_from_parts(&parts);
             let result_string = TxtRepo::construct_result_string(&updated_task);
+            TxtRepo::clear_file_contents(&file_path_str);
             file.write_all(result_string.as_bytes()).expect(ERR_OUTPUT);
             true
         }

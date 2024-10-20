@@ -22,7 +22,7 @@ impl View {
             io::stdin().read_line(&mut command).expect(ERR_INPUT);
             match command.as_str().trim() {
                 "create" => Self::create_task(&self),
-                "View" => Self::display_tasks(&self),
+                "view" => Self::display_tasks(&self),
                 "search" => Self::search_tasks(&self),
                 "delete" => Self::delete_tasks(&self),
                 "status" => Self::change_status(&self),
@@ -83,7 +83,7 @@ impl View {
                 println!("No Tasks found matching your search");
             }
             else {
-                println!("Tasks taht matched your search:");
+                println!("Tasks that matched your search:");
                 println!("{tasks}");
             }
         }
@@ -124,7 +124,10 @@ impl View {
                     Some(new_status) => {
                         match self.repo.update_status(&term, new_status) {
                             true => break,
-                            false => println!("Task not found"),
+                            false => {
+                                println!("Task not found");
+                                self.change_status();
+                            },
                         };
 
                     }
