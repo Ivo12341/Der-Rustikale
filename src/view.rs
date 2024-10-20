@@ -79,7 +79,7 @@ impl View {
                 break;
             }
             let tasks = self.repo.search_tasks(&term);
-            if (tasks == "") {
+            if tasks == "" {
                 println!("No Tasks found matching your search");
             }
             else {
@@ -94,7 +94,7 @@ impl View {
             println!("Enter Title of Task to be deleted");
             let mut term = String::new();
             io::stdin().read_line(&mut term).expect(ERR_INPUT);
-            if (self.repo.delete_tasks(&term)) {
+            if self.repo.delete_tasks(&term) {
                 break;
             }
             else {

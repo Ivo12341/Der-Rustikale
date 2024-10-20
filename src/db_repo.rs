@@ -76,14 +76,3 @@ impl Repository for DbRepo {
     }
 }
 
-impl DbRepo {
-    pub fn check_task_exists(&self, title: &str) -> bool {
-        let check_query = format!("SELECT 1 FROM TASK WHERE title = '{}'", title);
-        let mut statement = self.connection.prepare(check_query).expect(ERR_GENERAL);
-        if let sqlite::State::Row = statement.next().unwrap() {
-            true
-        } else {
-            false
-        }
-    }
-}

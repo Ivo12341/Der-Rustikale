@@ -8,9 +8,7 @@ use crate::task::{Status, Task};
 
 
 
-pub struct TxtRepo {
-    file_path: String,
-}
+pub struct TxtRepo {}
 
 impl Repository for TxtRepo {
     fn save_task(&self, task: &Task) -> bool {
@@ -19,8 +17,8 @@ impl Repository for TxtRepo {
         if Path::exists(Path::new(&file_title)) {
             return false
         }
-        let mut file: Option<File> = None;
-        file = match File::create(format!("./db/{file_title}.txt")) {
+        let mut _file: Option<File> = None;
+        _file = match File::create(format!("./db/{file_title}.txt")) {
             Ok(mut file) => {
                 file.write_all(&result_string.into_bytes()).expect(ERR_OUTPUT);
                 Some(file)
@@ -89,9 +87,9 @@ impl Repository for TxtRepo {
 }
 
 impl TxtRepo {
-    pub fn new(file_path: String) -> Self {
+    pub fn new() -> Self {
         create_dir_all("./db").expect("Hallo");
-        TxtRepo { file_path }
+        TxtRepo {}
     }
 
     fn construct_result_string(task: &Task) -> String {

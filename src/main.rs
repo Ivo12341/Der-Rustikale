@@ -12,7 +12,6 @@ use crate::view::View;
 const ERR_GENERAL: &str = "Error occurred";
 const ERR_INPUT: &str = "Failed to read line";
 const ERR_OUTPUT: &str = "Failed to write";
-const ERR_VALID_TASK: &str = "Enter a valid task";
 const ERR_VALID_OPTION: &str = "Enter a valid option";
 
 fn main() {
@@ -22,7 +21,7 @@ fn main() {
         io::stdin().read_line(&mut command).expect(ERR_INPUT);
         match command.as_str().trim() {
             "txt" => {
-                let txt_repo = TxtRepo::new("tasks.txt".to_string());
+                let txt_repo = TxtRepo::new();
                 let view_txt = View::new(Box::new(txt_repo));
                 view_txt.start();
             },
