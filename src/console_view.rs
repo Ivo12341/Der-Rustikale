@@ -5,13 +5,13 @@ use crate::repository::Repository;
 use crate::task::Task;
 use crate::task::Status;
 
-pub struct View {
+pub struct ConsoleView {
     repo: Box<dyn Repository>
 }
 
-impl View {
+impl ConsoleView {
     pub fn new(repo: Box<dyn Repository>) -> Self {
-        View { repo }
+        ConsoleView { repo }
     }
 
     pub fn start(&self) {
