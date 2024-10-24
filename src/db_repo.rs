@@ -71,7 +71,8 @@ impl Repository for DbRepo {
             Ok(_) => {true}
             Err(err) => {
                 println!("{err}");
-                false}
+                false
+            }
         }
     }
 }

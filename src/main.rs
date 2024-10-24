@@ -1,13 +1,15 @@
-mod view;
+mod console_view;
 mod task;
 mod db_repo;
 mod txt_repo;
 mod repository;
+mod gui_view;
 
 use std::io;
 use crate::db_repo::DbRepo;
 use crate::txt_repo::TxtRepo;
-use crate::view::View;
+use crate::console_view::View;
+use crate::gui_view::ToDoApp;
 
 const ERR_GENERAL: &str = "Error occurred";
 const ERR_INPUT: &str = "Failed to read line";
@@ -30,6 +32,19 @@ fn main() {
                 let view_db = View::new(Box::new(db_repo));
                 view_db.start();
             },
+            "GUI" => {
+                let options = eframe::NativeOptions {
+                    viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
+                    ..Default::default()
+                };
+                eframe::run_native(
+                    "Hallo Zusammen",
+                    options,
+                    Box::new(|cc| {
+                        Ok(Box::<ToDoApp>::default())
+                    }),
+                ).expect("Crash and burn");
+            }
             "exit" => break,
             _ => println!("Coffee, Cheetos, Chicken"),
         }
