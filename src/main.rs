@@ -31,7 +31,7 @@ fn main() {
                 "GUI" => {
                     let repo = query_method();
                     let options = eframe::NativeOptions {
-                        viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
+                        viewport: egui::ViewportBuilder::default().with_inner_size([500.0, 340.0]),
                         ..Default::default()
                     };
                     eframe::run_native(
