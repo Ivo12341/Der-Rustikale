@@ -11,7 +11,9 @@ pub struct ToDoApp {
     title_input: String,
     due_date_input: String,
     error: [String; 2],
-    prio: i32
+    prio: i32,
+    term: String,
+    result: String
 }
 
 enum Tab {
@@ -30,7 +32,9 @@ impl ToDoApp {
             title_input: ToDoApp::default().title_input,
             due_date_input: ToDoApp::default().due_date_input,
             error: ToDoApp::default().error,
-            prio: ToDoApp::default().prio
+            prio: ToDoApp::default().prio,
+            term: ToDoApp::default().term,
+            result: ToDoApp::default().result
         }
     }
 }
@@ -43,7 +47,9 @@ impl Default for ToDoApp {
             title_input: String::from(""),
             due_date_input: String::from(""),
             error: [String::from(""), String::from("")],
-            prio: 0
+            prio: 0,
+            term: String::from(""),
+            result: String::from("")
         }
     }
 }
@@ -70,7 +76,7 @@ impl eframe::App for ToDoApp {
                     }
                     }
                 CREATE => {
-                    ui.heading("Under Construction");
+                    ui.heading("Create a Task");
                     if ui.button("back").clicked() {
                         self.tab = HOME
                     }
@@ -104,15 +110,38 @@ impl eframe::App for ToDoApp {
                     }
                 }
                 VIEW => {
-                    ui.heading("Under Construction");
+                    ui.heading("View all Tasks");
                     if ui.button("back").clicked() {
                         self.tab = HOME
+                    }
+                    let tasks = self.repo.retrieve_tasks();
+                    if tasks.len() == 0 {
+                        ui.label("No Tasks found");
+                    }
+                    else {
+                        ui.label("Tasks: ");
+                    }
+                    for task in tasks {
+                        ui.label(task);
                     }
                 }
                 SEARCH => {
                     ui.heading("Under Construction");
                     if ui.button("back").clicked() {
                         self.tab = HOME
+                    }
+                    let lala = ui.label("Search-term");
+                    ui.text_edit_singleline(&mut self.term).labelled_by(lala.id);
+                    ui.label(&self.result);
+                    if ui.button("Search").clicked() {
+                        let res = self.repo.search_tasks(&self.term.trim());
+                        self.result = String::from("");
+                        if res != "" {
+                          self.result = res;
+                        }
+                        else {
+                            self.result = String::from("No Task matching the term found");
+                        }
                     }
                 }
                 DELETE => {

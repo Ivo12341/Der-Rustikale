@@ -52,7 +52,8 @@ impl Repository for DbRepo {
             let priority: i32 = statement.read::<i64, _>(2).unwrap() as i32;
             let status: String = statement.read(3).unwrap();
             let task = format!("{} | {} | {} | {}", title, due_date, priority, status);
-            task_str.push(task.parse().unwrap());
+            task_str.push_str(&task);
+            task_str.push('\n');
         }
         task_str
     }
