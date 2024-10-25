@@ -126,9 +126,10 @@ impl eframe::App for ToDoApp {
                     }
                 }
                 SEARCH => {
-                    ui.heading("Under Construction");
+                    ui.heading("Search Tasks");
                     if ui.button("back").clicked() {
-                        self.tab = HOME
+                        self.tab = HOME;
+                        self.term = String::from("");
                     }
                     let lala = ui.label("Search-term");
                     ui.text_edit_singleline(&mut self.term).labelled_by(lala.id);
@@ -145,9 +146,13 @@ impl eframe::App for ToDoApp {
                     }
                 }
                 DELETE => {
-                    ui.heading("Under Construction");
+                    ui.heading("Delete Tasks");
                     if ui.button("back").clicked() {
                         self.tab = HOME
+                    }
+                    ui.text_edit_singleline(&mut self.term);
+                    if ui.button("Löschen").clicked() && self.term != "" {
+                        self.repo.delete_tasks(&self.term);
                     }
                 }
                 STATUS => {
