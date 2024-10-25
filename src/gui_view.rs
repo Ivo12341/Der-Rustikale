@@ -13,7 +13,8 @@ pub struct ToDoApp {
     error: [String; 2],
     prio: i32,
     term: String,
-    result: String
+    result: String,
+    status: String
 }
 
 enum Tab {
@@ -34,7 +35,8 @@ impl ToDoApp {
             error: ToDoApp::default().error,
             prio: ToDoApp::default().prio,
             term: ToDoApp::default().term,
-            result: ToDoApp::default().result
+            result: ToDoApp::default().result,
+            status: ToDoApp::default().status
         }
     }
 }
@@ -49,7 +51,8 @@ impl Default for ToDoApp {
             error: [String::from(""), String::from("")],
             prio: 0,
             term: String::from(""),
-            result: String::from("")
+            result: String::from(""),
+            status: String::from("")
         }
     }
 }
@@ -148,17 +151,30 @@ impl eframe::App for ToDoApp {
                 DELETE => {
                     ui.heading("Delete Tasks");
                     if ui.button("back").clicked() {
-                        self.tab = HOME
+                        self.tab = HOME;
+                        self.term = String::from("");
                     }
                     ui.text_edit_singleline(&mut self.term);
-                    if ui.button("Löschen").clicked() && self.term != "" {
+                    if ui.button("Delete").clicked() && self.term != "" {
                         self.repo.delete_tasks(&self.term);
                     }
                 }
                 STATUS => {
-                    ui.heading("Under Construction");
+                    ui.heading("Update the Status of Tasks");
                     if ui.button("back").clicked() {
                         self.tab = HOME
+                    }
+                    let lele = ui.label("Title of the task");
+                    ui.text_edit_singleline(&mut self.term).labelled_by(lele.id);
+                    egui::ComboBox::from_label("Select Status")
+                        .selected_text(&self.status)
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.status, String::from("Not Started"), "Not Started");
+                            ui.selectable_value(&mut self.status, String::from("Working"), "Working");
+                            ui.selectable_value(&mut self.status, String::from("Done"), "Done");
+                        });
+                    if ui.button("Update").clicked() && self.term != "" && self.status != "" {
+                        self.repo.update_status(&self.term, Status::get_status_from_string(&self.status));
                     }
                 }
             }
