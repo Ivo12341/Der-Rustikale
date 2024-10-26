@@ -5,6 +5,8 @@ pub trait Repository {
 
     fn retrieve_tasks(&self) -> Vec<String>;
 
+    fn retrieve_tasks_title(&self) -> Vec<String>;
+
     fn search_tasks(&self, term: &str) -> String;
 
     fn delete_tasks(&self, term: &str) -> bool;

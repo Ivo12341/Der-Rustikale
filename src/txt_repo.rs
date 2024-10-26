@@ -1,12 +1,10 @@
+use crate::repository::Repository;
+use crate::task::{Status, Task};
+use crate::{ERR_GENERAL, ERR_OUTPUT};
+use regex::Regex;
 use std::fs::{create_dir_all, read_dir, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::Path;
-use regex::Regex;
-use crate::{ERR_GENERAL, ERR_OUTPUT};
-use crate::repository::Repository;
-use crate::task::{Status, Task};
-
-
 
 pub struct TxtRepo {}
 
@@ -15,17 +13,16 @@ impl Repository for TxtRepo {
         let result_string = Self::construct_result_string(task);
         let file_title = format!("{}", task.title.trim());
         if Path::exists(Path::new(&file_title)) {
-            return false
+            return false;
         }
         let mut _file: Option<File> = None;
         _file = match File::create(format!("./db/{file_title}.txt")) {
             Ok(mut file) => {
-                file.write_all(&result_string.into_bytes()).expect(ERR_OUTPUT);
+                file.write_all(&result_string.into_bytes())
+                    .expect(ERR_OUTPUT);
                 Some(file)
             }
-            Err(_) => {
-                None
-            }
+            Err(_) => None,
         };
         true
     }
@@ -35,14 +32,32 @@ impl Repository for TxtRepo {
         let paths = read_dir("./db").unwrap();
         for path in paths {
             let mut task_file = File::open(path.unwrap().path()).unwrap();
-            task_vec.push(TxtRepo::get_file_contents(&mut task_file).trim().parse().unwrap());
+            task_vec.push(
+                TxtRepo::get_file_contents(&mut task_file)
+                    .trim()
+                    .parse()
+                    .unwrap(),
+            );
+        }
+        task_vec
+    }
+
+    fn retrieve_tasks_title(&self) -> Vec<String> {
+        let mut task_vec: Vec<String> = Vec::new();
+        let paths = read_dir("./db").unwrap();
+        for path in paths {
+            let mut task_file = File::open(path.unwrap().path()).unwrap();
+            let cont = TxtRepo::get_file_contents(&mut task_file);
+            let parts: Vec<&str> = cont.split("|").collect();
+            task_vec.push(String::from(parts[0].trim()));
         }
         task_vec
     }
 
     fn search_tasks(&self, term: &str) -> String {
         let mut return_string = String::from("");
-        let leggie_from_lintendo = Regex::new(&format!(".*{}.*", regex::escape(&term.trim()))).unwrap();
+        let leggie_from_lintendo =
+            Regex::new(&format!(".*{}.*", regex::escape(&term.trim()))).unwrap();
         let paths = read_dir("./db").unwrap();
         for path in paths {
             let path = path.unwrap().path();
@@ -60,8 +75,7 @@ impl Repository for TxtRepo {
         if TxtRepo::check_path_exists(&file_path_str) {
             TxtRepo::remove_file(&file_path_str);
             true
-        }
-        else {
+        } else {
             false
         }
     }
@@ -69,7 +83,11 @@ impl Repository for TxtRepo {
     fn update_status(&self, term: &str, new_status: Status) -> bool {
         let file_path_str = format!("./db/{}.txt", &term.trim());
         if TxtRepo::check_path_exists(&file_path_str) {
-            let mut file = OpenOptions::new().read(true).write(true).open(&file_path_str).expect(ERR_GENERAL);
+            let mut file = OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(&file_path_str)
+                .expect(ERR_GENERAL);
             let cont = TxtRepo::get_file_contents(&mut file);
             let mut parts: Vec<&str> = cont.split("|").collect();
             let status_string = Status::get_string_from_status(&new_status);
@@ -79,8 +97,7 @@ impl Repository for TxtRepo {
             TxtRepo::clear_file_contents(&file_path_str);
             file.write_all(result_string.as_bytes()).expect(ERR_OUTPUT);
             true
-        }
-        else {
+        } else {
             false
         }
     }
@@ -93,7 +110,13 @@ impl TxtRepo {
     }
 
     fn construct_result_string(task: &Task) -> String {
-        format!("{} | {} | {} | {:?}\n", task.title.trim(), task.due_date.trim(), task.priority, task.status)
+        format!(
+            "{} | {} | {} | {:?}\n",
+            task.title.trim(),
+            task.due_date.trim(),
+            task.priority,
+            task.status
+        )
     }
 
     pub fn check_path_exists(path_str: &str) -> bool {
@@ -102,7 +125,11 @@ impl TxtRepo {
     }
 
     pub fn clear_file_contents(path_str: &str) {
-        OpenOptions::new().write(true).truncate(true).open(path_str).expect("Error while opening file");
+        OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(path_str)
+            .expect("Error while opening file");
     }
 
     fn get_file_contents(file: &mut File) -> String {

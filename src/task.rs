@@ -35,9 +35,9 @@ pub enum Status {
 impl Status {
     pub fn get_string_from_status(status: &Status) -> String {
         match status {
-            Status::NotStarted => {String::from("NotStarted")}
-            Status::Working => {String::from("Working")}
-            Status::Done => {String::from("Done")}
+            Status::NotStarted => String::from("NotStarted"),
+            Status::Working => String::from("Working"),
+            Status::Done => String::from("Done"),
         }
     }
 
