@@ -1,17 +1,17 @@
+use crate::repository::Repository;
+use crate::task::Status;
+use crate::task::Task;
+use crate::ERR_INPUT;
 use crate::ERR_VALID_OPTION;
 use std::io;
-use crate::{ ERR_INPUT };
-use crate::repository::Repository;
-use crate::task::Task;
-use crate::task::Status;
 
-pub struct View {
-    repo: Box<dyn Repository>
+pub struct ConsoleView {
+    repo: Box<dyn Repository>,
 }
 
-impl View {
+impl ConsoleView {
     pub fn new(repo: Box<dyn Repository>) -> Self {
-        View { repo }
+        ConsoleView { repo }
     }
 
     pub fn start(&self) {
@@ -33,7 +33,12 @@ impl View {
     }
 
     fn create_task(&self) {
-        let mut new_task = Task { title: String::new(), due_date: String::new(), priority: 0, status: Status::NotStarted };
+        let mut new_task = Task {
+            title: String::new(),
+            due_date: String::new(),
+            priority: 0,
+            status: Status::NotStarted,
+        };
         let mut temp_date = String::new();
         loop {
             println!("When is the Task due (yyyy-mm-dd)");
@@ -81,8 +86,7 @@ impl View {
             let tasks = self.repo.search_tasks(&term);
             if tasks == "" {
                 println!("No Tasks found matching your search");
-            }
-            else {
+            } else {
                 println!("Tasks that matched your search:");
                 println!("{tasks}");
             }
@@ -96,8 +100,7 @@ impl View {
             io::stdin().read_line(&mut term).expect(ERR_INPUT);
             if self.repo.delete_tasks(&term) {
                 break;
-            }
-            else {
+            } else {
                 println!("Task with name not found. \n Task not deleted.");
             }
         }
@@ -107,33 +110,30 @@ impl View {
         println!("Enter Title of Task to be updated");
         let mut term = String::new();
         io::stdin().read_line(&mut term).expect(ERR_INPUT);
-            loop {
-                let mut status = String::new();
-                println!("What status do you want to give 1: not started, 2: working, 3: done");
-                io::stdin().read_line(&mut status).expect(ERR_INPUT);
-                let new_status: Option<Status> = match status.trim() {
-                    "1" => Some(Status::NotStarted),
-                    "2" => Some(Status::Working),
-                    "3" => Some(Status::Done),
-                    _ => None,
-                };
-                match new_status {
-                    None => {
-                        println!("{ERR_VALID_OPTION}");
-                    }
-                    Some(new_status) => {
-                        match self.repo.update_status(&term, new_status) {
-                            true => break,
-                            false => {
-                                println!("Task not found");
-                                self.change_status();
-                            },
-                        };
-
-                    }
+        loop {
+            let mut status = String::new();
+            println!("What status do you want to give 1: not started, 2: working, 3: done");
+            io::stdin().read_line(&mut status).expect(ERR_INPUT);
+            let new_status: Option<Status> = match status.trim() {
+                "1" => Some(Status::NotStarted),
+                "2" => Some(Status::Working),
+                "3" => Some(Status::Done),
+                _ => None,
+            };
+            match new_status {
+                None => {
+                    println!("{ERR_VALID_OPTION}");
+                }
+                Some(new_status) => {
+                    match self.repo.update_status(&term, new_status) {
+                        true => break,
+                        false => {
+                            println!("Task not found");
+                            self.change_status();
+                        }
+                    };
                 }
             }
+        }
     }
 }
-
-

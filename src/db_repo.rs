@@ -1,10 +1,10 @@
-use sqlite::Connection;
-use crate::ERR_GENERAL;
 use crate::repository::Repository;
 use crate::task::{Status, Task};
+use crate::ERR_GENERAL;
+use sqlite::Connection;
 
 pub struct DbRepo {
-    connection: Connection
+    connection: Connection,
 }
 
 impl DbRepo {
@@ -14,15 +14,20 @@ impl DbRepo {
         connection.execute(create_query).expect(ERR_GENERAL);
         DbRepo { connection }
     }
-
 }
 
 impl Repository for DbRepo {
     fn save_task(&self, task: &Task) -> bool {
-        let save_query = format!("INSERT INTO TASK (title, due_date, priority, status) VALUES ('{}', '{}', {}, '{}')", task.title, task.due_date, task.priority, Status::get_string_from_status(&task.status));
+        let save_query = format!(
+            "INSERT INTO TASK (title, due_date, priority, status) VALUES ('{}', '{}', {}, '{}')",
+            task.title,
+            task.due_date,
+            task.priority,
+            Status::get_string_from_status(&task.status)
+        );
         match self.connection.execute(save_query) {
-            Ok(_) => {true}
-            Err(_) => {false}
+            Ok(_) => true,
+            Err(_) => false,
         }
     }
 
@@ -35,10 +40,27 @@ impl Repository for DbRepo {
             let due_date: String = statement.read(1).unwrap();
             let priority: i32 = statement.read::<i64, _>(2).unwrap() as i32;
             let status: String = statement.read(3).unwrap();
-            let task = format!("{} | {} | {} | {}", title.trim(), due_date.trim(), priority, status.trim());
+            let task = format!(
+                "{} | {} | {} | {}",
+                title.trim(),
+                due_date.trim(),
+                priority,
+                status.trim()
+            );
             task_vec.push(task);
         }
 
+        task_vec
+    }
+
+    fn retrieve_tasks_title(&self) -> Vec<String> {
+        let retrieve_query = "SELECT title FROM TASK";
+        let mut statement = self.connection.prepare(retrieve_query).expect(ERR_GENERAL);
+        let mut task_vec: Vec<String> = Vec::new();
+        while let sqlite::State::Row = statement.next().unwrap() {
+            let title: String = statement.read(0).unwrap();
+            task_vec.push(title);
+        }
         task_vec
     }
 
@@ -52,7 +74,8 @@ impl Repository for DbRepo {
             let priority: i32 = statement.read::<i64, _>(2).unwrap() as i32;
             let status: String = statement.read(3).unwrap();
             let task = format!("{} | {} | {} | {}", title, due_date, priority, status);
-            task_str.push(task.parse().unwrap());
+            task_str.push_str(&task);
+            task_str.push('\n');
         }
         task_str
     }
@@ -60,19 +83,22 @@ impl Repository for DbRepo {
     fn delete_tasks(&self, term: &str) -> bool {
         let delete_query = format!("DELETE FROM TASK WHERE title LIKE '{term}'");
         match self.connection.execute(delete_query) {
-            Ok(_) => {true}
-            Err(_) => {false}
+            Ok(_) => true,
+            Err(_) => false,
         }
     }
 
     fn update_status(&self, term: &str, status: Status) -> bool {
-        let update_query = format!("UPDATE TASK SET status = '{}' WHERE title LIKE '%{term}%'", {Status::get_string_from_status(&status)});
+        let update_query = format!(
+            "UPDATE TASK SET status = '{}' WHERE title LIKE '%{term}%'",
+            { Status::get_string_from_status(&status) }
+        );
         match self.connection.execute(update_query) {
-            Ok(_) => {true}
+            Ok(_) => true,
             Err(err) => {
                 println!("{err}");
-                false}
+                false
+            }
         }
     }
 }
-
