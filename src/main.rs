@@ -19,7 +19,7 @@ const ERR_VALID_OPTION: &str = "Enter a valid option";
 
 fn main() {
     loop {
-        println!("Which view would you like to use, console or GUI");
+        println!("Which view would you like to use, console (deprecated) or GUI");
         let mut command = String::new();
         io::stdin().read_line(&mut command).expect(ERR_INPUT);
         match command.as_str().trim() {
@@ -35,9 +35,11 @@ fn main() {
                     ..Default::default()
                 };
                 eframe::run_native(
-                    "Hallo Zusammen",
+                    "ToDO App",
                     options,
-                    Box::new(|_cc| Ok(Box::new(ToDoApp::new(repo)))),
+                    Box::new(|cc| {
+                        Ok(Box::new(ToDoApp::new(repo)))
+                    }),
                 )
                 .expect("Crash and burn");
             }

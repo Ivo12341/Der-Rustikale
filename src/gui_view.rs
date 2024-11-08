@@ -61,28 +61,37 @@ impl Default for ToDoApp {
 impl eframe::App for ToDoApp {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         egui::CentralPanel::default().show(ctx, |ui| match self.tab {
+
             HOME => {
-                if ui.button("Create").clicked() {
-                    self.tab = CREATE;
-                }
-                if ui.button("View").clicked() {
-                    self.tab = VIEW;
-                }
-                if ui.button("Search").clicked() {
-                    self.tab = SEARCH;
-                }
-                if ui.button("Delete").clicked() {
-                    self.tab = DELETE;
-                }
-                if ui.button("Status").clicked() {
-                    self.tab = STATUS;
-                }
+                ui.vertical_centered(|ui| {
+                    ui.heading("ToDo App");
+                    ui.add_space(15.0);
+                    if ui.button("Create").clicked() {
+                        self.tab = CREATE;
+                    }
+                    ui.add_space(10.0);
+                    if ui.button("View").clicked() {
+                        self.tab = VIEW;
+                    }
+                    ui.add_space(10.0);
+                    if ui.button("Search").clicked() {
+                        self.tab = SEARCH;
+                    }
+                    ui.add_space(10.0);
+                    if ui.button("Delete").clicked() {
+                        self.tab = DELETE;
+                    }
+                    ui.add_space(10.0);
+                    if ui.button("Status").clicked() {
+                        self.tab = STATUS;
+                    }
+                });
             }
             CREATE => {
                 ui.heading("Create a Task");
                 if ui.button("back").clicked() {
                     self.tab = HOME;
-                    self.error[0] = String::from("Nich jültüsch");
+                    self.error[0] = String::from("");
                 }
                 let lulu = ui.label("Title");
                 ui.text_edit_singleline(&mut self.title_input)
